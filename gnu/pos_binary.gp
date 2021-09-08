@@ -10,10 +10,7 @@ set term gif animate delay 2
 set output "position.gif"
 unset title
 
-## CSVの場合は下記setを有効にする
-## set datafile separator ","
-
 do for [i=0: 127] {
   loadnamen = sprintf("result/%d.dat",i)
-  splot loadnamen u 1:2:3 w dot notitle
+  spl loadnamen binary format="%f%f%f" u ($1):($2):($3) w dot notitle
 }
