@@ -352,8 +352,8 @@ int main ( int argc, char * argv[] ) {
   double vhalf[ParamSet.nPtcl][3]; // Leap-Frog法用の半ステップ進んだ速度
   // --------------------
   // ** 系の変数定義
-  double tSys = tSnap = tDisp = 0.0; // 系の経過時間，スナップ時間，画面表示時間
-  double pot = kin = eTot = 0.0;     // ポテンシャルエネルギー，運動エネルギー，全エネルギー
+  double tSys = 0.0, tSnap = 0.0, tDisp = 0.0; // 系の経過時間，スナップ時間，画面表示時間
+  double pot = 0.0, kin = 0.0, eTot = 0.0;     // ポテンシャルエネルギー，運動エネルギー，全エネルギー
   double eInit = 0.0; // 初期エネルギー
   int    nStep = 0;   // ステップ数
   // --------------------
