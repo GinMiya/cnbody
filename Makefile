@@ -9,11 +9,11 @@ CC := g++ -std=gnu++14
 ##################################################
 # コンパイルオプションの指定
 CFLAGS += -O3
-# CFLAGS += -ffast-math
-# CFLAGS += -funroll-loops
-# CFLAGS += -march=native
-# CFLAGS += -mtune=native
-# CFLAGS += -mavx
+CFLAGS += -ffast-math
+CFLAGS += -funroll-loops
+CFLAGS += -march=native
+CFLAGS += -mtune=native
+CFLAGS += -mavx
 # CFLAGS += -Wall
 # CFLAGS += -pg
 # CFLAGS += -fopenmp
@@ -28,7 +28,7 @@ CPPOBJS += $(patsubst $(SRCDIR)/%.cpp, %.o, $(wildcard $(SRCDIR)/*.cpp))
 
 ##################################################
 # Recipes
-.PHONY: clean all cleandir
+.PHONY: clean all cleanlog cleandir
 
 # ------------------------------
 # -- Make object files
