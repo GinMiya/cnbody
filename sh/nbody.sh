@@ -28,10 +28,12 @@ DT_DIAGRAM=0.015625
 #    >> NPTCL: 粒子数
 #    >> SOFTLEN: Softening length
 #    >> RVIR: ビリアル比
+#    >> RCUT: カットオフ半径
 ###############################################################
 NPTCL=2048
 SOFTLEN=0.03125
 RVIR=0.1
+RCUT=3.0
 
 ###############################################################
 # ** 使える物理コア・理論コア数の取得
@@ -64,6 +66,7 @@ OPTION+=" -T $TIME_END"
 OPTION+=" -n $NPTCL"
 OPTION+=" -s $SOFTLEN"
 OPTION+=" -v $RVIR"
+OPTION+=" -r $RCUT"
 OPTION+=" -d $DT_SNAP"
 OPTION+=" -D $DT_DIAGRAM"
 if [ $BINARY_FLG -eq 1 ]; then
