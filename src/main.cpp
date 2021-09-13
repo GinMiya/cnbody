@@ -34,6 +34,7 @@ struct Param {
   double dTSnap;      // ファイル出力間隔
   double tEnd;        // 終了時間
   double rVir;        // ビリアル比
+  double rCut;        // カットオフ半径
   bool binaryFlg;     // バイナリ出力有無
   char dirName[50];   // 出力先ディレクトリ名
   void dispParams ( void ) {
@@ -45,6 +46,7 @@ struct Param {
     std::cout << " * Time Step of Fileoutput = " << this->dTSnap    << std::endl;
     std::cout << " * Finish Time = "             << this->tEnd      << std::endl;
     std::cout << " * Virial ratio = "            << this->rVir      << std::endl;
+    std::cout << " * Cutoff radius = "           << this->rCut      << std::endl;
     std::cout << " * Binary output = "           << this->binaryFlg << std::endl;
     std::cout << " * Output directory = "        << this->dirName   << std::endl;
     std::cout << "=============================" << std::endl;
@@ -65,7 +67,7 @@ void optionHandling ( int argc, char * argv[], Param * ParamSet ) {
   // --------------------
   // ** 実行オプションの内容を確認する
   std::cout << "===== Change Parameters =====" << std::endl;
-  while ( ( optionName = getopt(argc, argv, "o:t:T:n:s:v:d:D:b") ) != -1 ) {
+  while ( ( optionName = getopt(argc, argv, "o:t:T:n:s:v:r:d:D:b") ) != -1 ) {
     switch ( optionName ) {
       case 'o':
         strcpy(ParamSet->dirName, optarg);
@@ -90,6 +92,10 @@ void optionHandling ( int argc, char * argv[], Param * ParamSet ) {
       case 'v':
         ParamSet->rVir = atof(optarg); // String型をdoubleにする
         std::cout << " * Virial ratio = " << ParamSet->rVir << std::endl;
+        break;
+      case 'r':
+        ParamSet->rCut = atof(optarg); // String型をdoubleにする
+        std::cout << " * Cutoff radius = " << ParamSet->rCut << std::endl;
         break;
       case 'd':
         ParamSet->dTSnap = atof(optarg); // String型をdoubleにする
@@ -150,6 +156,87 @@ double calcPotEne ( double m[], double x[][3], Param * ParamSet ) {
 double calcKinEne ( double m[], double v[][3], Param * ParamSet ) {
   double kinEne = 0;
   for ( int i = 0; i < ParamSet->nPtcl; ++i ) {
+    kinEne += 0.5 * m[i]
+              * ((v[i][0] * v[i][0]) + (v[i][1] * v[i][1]) + (v[i][2] * v[i][2]));
+  }
+  return kinEne;
+}
+// =========================
+// 重心計算
+// =========================
+void calcGravCenter ( double m[], double x[][3], double gc[3], Param * ParamSet ) {
+  double gcAll[3] = {0.0, 0.0, 0.0};
+  double xigc[3];
+  double r2igc = 0.0;
+  gc[0] = 0.0;
+  gc[1] = 0.0;
+  gc[2] = 0.0;
+  for ( int i = 0; i < ParamSet->nPtcl; ++i ) {
+    gcAll[0] += m[i] * x[i][0];
+    gcAll[1] += m[i] * x[i][0];
+    gcAll[2] += m[i] * x[i][0];
+  }
+  for ( int i = 0; i < ParamSet->nPtcl; ++i ) {
+    xigc[0] = x[i][0] - gcAll[0];
+    xigc[1] = x[i][1] - gcAll[1];
+    xigc[2] = x[i][2] - gcAll[2];
+    r2igc = (xigc[0] * xigc[0]) + (xigc[1] * xigc[1]) + (xigc[2] * xigc[2]);
+    if ( r2igc <= (ParamSet->rCut * ParamSet->rCut) ) {
+      gc[0] += m[i] * x[i][0];
+      gc[1] += m[i] * x[i][0];
+      gc[2] += m[i] * x[i][0];
+    }
+  }
+}
+// =========================
+// ポテンシャルエネルギー計算（重心から有限半径内の計算）
+// =========================
+double calcPotEneGC ( double m[], double x[][3], double gc[3], Param * ParamSet ) {
+  double potEne = 0.0;
+  double xij[3], xigc[3], xjgc[3];
+  double r2ij = 0.0;
+  double r2igc = 0.0;
+  double r2jgc = 0.0;
+  for ( int i = 0; i < ParamSet->nPtcl - 1; ++i ) {
+    xigc[0] = x[i][0] - gc[0];
+    xigc[1] = x[i][1] - gc[1];
+    xigc[2] = x[i][2] - gc[2];
+    r2igc = (xigc[0] * xigc[0]) + (xigc[1] * xigc[1]) + (xigc[2] * xigc[2]);
+    if ( r2igc >= (ParamSet->rCut * ParamSet->rCut) ) {
+      continue;
+    }
+    for ( int j = i + 1; j < ParamSet->nPtcl; ++j ) {
+      xjgc[0] = x[j][0] - gc[0];
+      xjgc[1] = x[j][1] - gc[1];
+      xjgc[2] = x[j][2] - gc[2];
+      r2jgc = (xjgc[0] * xjgc[0]) + (xjgc[1] * xjgc[1]) + (xjgc[2] * xjgc[2]);
+      if ( r2jgc >= (ParamSet->rCut * ParamSet->rCut) ) {
+        continue;
+      }
+      xij[0] = x[j][0] - x[i][0];
+      xij[1] = x[j][1] - x[i][1];
+      xij[2] = x[j][2] - x[i][2];
+      r2ij = (xij[0] * xij[0]) + (xij[1] * xij[1]) + (xij[2] * xij[2]);
+      potEne += - (m[i] * m[j]) / sqrt(r2ij + (ParamSet->softLen * ParamSet->softLen));
+    }
+  }
+  return potEne;
+}
+// =========================
+// 運動エネルギー計算（重心から有限半径内の計算）
+// =========================
+double calcKinEneGC ( double m[], double x[][3], double v[][3], double gc[3], Param * ParamSet ) {
+  double kinEne = 0.0;
+  double xigc[3];
+  double r2igc = 0.0;
+  for ( int i = 0; i < ParamSet->nPtcl - 1; ++i ) {
+    xigc[0] = x[i][0] - gc[0];
+    xigc[1] = x[i][1] - gc[1];
+    xigc[2] = x[i][2] - gc[2];
+    r2igc = (xigc[0] * xigc[0]) + (xigc[1] * xigc[1]) + (xigc[2] * xigc[2]);
+    if ( r2igc >= (ParamSet->rCut * ParamSet->rCut) ) {
+      continue;
+    }
     kinEne += 0.5 * m[i]
               * ((v[i][0] * v[i][0]) + (v[i][1] * v[i][1]) + (v[i][2] * v[i][2]));
   }
@@ -335,6 +422,7 @@ int main ( int argc, char * argv[] ) {
   ParamSet.dTSnap    = 1.0 / 4.0;      // ファイル出力間隔
   ParamSet.tEnd      = 5.0;            // 終了時間
   ParamSet.rVir      = 0.1;            // ビリアル比
+  ParamSet.rCut      = 3.0;            // カットオフ半径
   ParamSet.binaryFlg = false;          // バイナリ出力有無
   strcpy(ParamSet.dirName, "result/"); // 出力先ディレクトリ名
   // --------------------
@@ -366,8 +454,21 @@ int main ( int argc, char * argv[] ) {
   makePtclDistribution(m, x, v, &ParamSet);
   // --------------------
   // ** 初期エネルギーの計算
-  pot = calcPotEne(m, x, &ParamSet);
-  kin = calcKinEne(m, v, &ParamSet);
+  #ifdef ENABLE_CUTOFF_RADIUS
+    // --------------------
+    // ** 重心計算
+    double gc[3]; // 重心
+    calcGravCenter(m, x, gc, &ParamSet);
+    // --------------------
+    // ** エネルギー計算
+    pot = calcPotEneGC(m, x, gc, &ParamSet);
+    kin = calcKinEneGC(m, x, v, gc, &ParamSet);
+  #else
+    // --------------------
+    // ** エネルギー計算
+    pot = calcPotEne(m, x, &ParamSet);
+    kin = calcKinEne(m, v, &ParamSet);
+  #endif // ENABLE_CUTOFF_RADIUS
   eTot = eInit = pot + kin;
   // --------------------
   // ** 初期加速度の計算
@@ -393,10 +494,20 @@ int main ( int argc, char * argv[] ) {
       outputPtclInfo(m, x, v, nStep, &ParamSet);
       tSnap += ParamSet.dTSnap;
     }
-    // --------------------
-    // ** エネルギー計算
-    pot = calcPotEne(m, x, &ParamSet);
-    kin = calcKinEne(m, v, &ParamSet);
+    #ifdef ENABLE_CUTOFF_RADIUS
+      // --------------------
+      // ** 重心計算
+      calcGravCenter(m, x, gc, &ParamSet);
+      // --------------------
+      // ** エネルギー計算
+      pot = calcPotEneGC(m, x, gc, &ParamSet);
+      kin = calcKinEneGC(m, x, v, gc, &ParamSet);
+    #else
+      // --------------------
+      // ** エネルギー計算
+      pot = calcPotEne(m, x, &ParamSet);
+      kin = calcKinEne(m, v, &ParamSet);
+    #endif // ENABLE_CUTOFF_RADIUS
     eTot = pot + kin;
     // --------------------
     // ** 画面出力
@@ -413,6 +524,11 @@ int main ( int argc, char * argv[] ) {
     // --------------------
     // ** 重力計算
     calcForce(m, x, a, &ParamSet);
+    #ifdef ENABLE_CUTOFF_RADIUS
+      // --------------------
+      // ** 重心計算
+      calcGravCenter(m, x, gc, &ParamSet);
+    #endif // ENABLE_CUTOFF_RADIUS
     // --------------------
     // ** Leap-Frog
     kickTime(a, v, &ParamSet);
