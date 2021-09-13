@@ -34,12 +34,13 @@ PICNAME = PICDIR."position.gif" # 画像ファイル名
 
 # ========================================
 # terminal 設定
-set term gif animate delay DERAY # git出力のterminal
+set term gif animate optimize delay DERAY # git出力のterminal
 set output PICNAME
 
 # ========================================
 # グラフ描画
 do for [i=NSTART: NFILE] {
+  set view 68,(i*360/NFILE),1,1
   loadnamen = DATADIR.sprintf("%d.dat",i)
   spl loadnamen u 1:2:3 w dot notitle
 }
