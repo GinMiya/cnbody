@@ -359,7 +359,7 @@ int main ( int argc, char * argv[] ) {
   // --------------------
   // ** ファイル出力用変数定義 ofstream
   char enePath[50];
-  sprintf(enePath, "%s/t-de.dat", ParamSet.dirName);
+  sprintf(enePath, "%s/energy.dat", ParamSet.dirName);
   std::ofstream ofsEne; // Energyに関する情報出力
   // --------------------
   // ** 初期分布を作る
@@ -389,7 +389,7 @@ int main ( int argc, char * argv[] ) {
     if ( (tSys >= tSnap) || ( (tSys + ParamSet.dT) - tSnap ) > (tSnap - tSys) ) {
       // --------------------
       // ** エネルギーと粒子状態の出力
-      ofsEne << tSys << "," << pot << "," << kin << "," << (eTot - eInit) / eInit <<  std::endl;
+      ofsEne << tSys << " " << pot << " " << kin << " " << (eTot - eInit) / eInit <<  std::endl;
       outputPtclInfo(m, x, v, nStep, &ParamSet);
       tSnap += ParamSet.dTSnap;
     }
