@@ -34,7 +34,7 @@ PICNAME = PICDIR."position.gif" # 画像ファイル名
 
 # ========================================
 # terminal 設定
-set term gif animate delay DERAY optimeze # git出力のterminal
+set term gif animate delay DERAY # git出力のterminal
 set output PICNAME
 
 # ========================================
