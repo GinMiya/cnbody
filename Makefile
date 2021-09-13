@@ -7,6 +7,12 @@ SRCDIR  = ./src
 CC := g++ -std=gnu++14
 
 ##################################################
+# マクロ設定
+# ------------------------------
+# -- エネルギー計算を重心からの有限半径内でカットオフする
+# MACROS += -DENABLE_CUTOFF_RADIUS
+
+##################################################
 # コンパイルオプションの指定
 CFLAGS += -O3
 CFLAGS += -ffast-math
@@ -32,16 +38,16 @@ CPPOBJS += $(patsubst $(SRCDIR)/%.cpp, %.o, $(wildcard $(SRCDIR)/*.cpp))
 
 # ------------------------------
 # -- Make object files
-%.o:	$(SRCDIR)/%.cpp $(CPPHDRS)
+%.o:	$(SRCDIR)/%.cpp
 	@echo "Bulding $< ..."
-	@$(CC) -c $< $(CFLAGS)
+	@$(CC) -c $< $(CFLAGS) $(MACROS)
 	@echo "[$< OK]"
 
 # ------------------------------
 # -- Link object files and make execution file
-all:	$(CPPOBJS) $(CPPHDRS)
+all:	$(CPPOBJS)
 	@echo "Linking object files..."
-	$(CC) $(CFLAGS) $(CPPOBJS) -o $(PROGRAM)
+	$(CC) $(CFLAGS) $(MACROS) $(CPPOBJS) -o $(PROGRAM)
 	@echo "Link Success! [$(PROGRAM)]"
 
 # ------------------------------
